@@ -6,24 +6,29 @@ from sklearn.metrics import classification_report
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import numpy as np
+import logging
 import datetime
 import os
+import re
+import sys
+
+MAX_NO_IMPROVEMENT = 5
 
 class NeuralNetwork(torch.nn.Module):
     def __init__(self, num_inputs):
         super().__init__()
 
         self.layers = torch.nn.Sequential(
-            torch.nn.Linear(num_inputs, 15),
+            torch.nn.Linear(num_inputs, 60),
             torch.nn.ReLU(),
 
-            torch.nn.Linear(15, 15),
+            torch.nn.Linear(60, 60),
             torch.nn.ReLU(),
 
-            torch.nn.Linear(15, 15),
+            torch.nn.Linear(60, 60),
             torch.nn.ReLU(),
 
-            torch.nn.Linear(15, 1)
+            torch.nn.Linear(60, 1)
         )
 
     def forward(self, x):
@@ -69,14 +74,6 @@ class VecDataset(torch.utils.data.Dataset):
         return self.labels.shape[0]
 
 if __name__ == "__main__":
-    # nn = neural_net(20)
-    # print(nn.layers[0].weight)
-
-    # x = torch.rand(1, 20)
-
-    # with torch.no_grad():
-    #     print(nn(x))
-
     handler = DataHandler('../data/eng_train.csv', '../data/eng_test.csv')
 
     train_loader = DataLoader(
@@ -97,8 +94,22 @@ if __name__ == "__main__":
     model = NeuralNetwork(handler.train_data.features.shape[1])
     optimizer = torch.optim.Adam(model.parameters(), lr = 0.001)
 
-    num_epochs = 3
+    cur_date_time = re.sub(r'\s|:', '_', str(datetime.datetime.now().replace(microsecond=0)))
+    output_dir = f'./nn_ckpt/{cur_date_time}'
+    os.mkdir(output_dir)
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        handlers=[
+            logging.FileHandler(os.path.join(output_dir, "training.log"), encoding="utf-8"),
+            logging.StreamHandler(sys.stdout),
+        ],
+    )
+
+    num_epochs = 100
     best_test_loss = np.inf
+    no_improvement = 0
 
     for epoch in range(num_epochs):
 
@@ -115,9 +126,10 @@ if __name__ == "__main__":
             optimizer.step()
 
             ### LOGGING
-            print(f"Epoch: {epoch+1:03d}/{num_epochs:03d}"
-                f" | Batch {batch_idx:03d}/{len(train_loader):03d}"
-                f" | Train Loss: {loss:.2f}")
+            if batch_idx % 10 == 0:
+                logging.info(f"Epoch: {epoch+1:03d}/{num_epochs:03d}"
+                    f" | Batch {batch_idx:03d}/{len(train_loader):03d}"
+                    f" | Train Loss: {loss:.2f}\n")
 
         model.eval()
 
@@ -138,19 +150,23 @@ if __name__ == "__main__":
                 all_labels.extend(labels)
 
             if test_loss < best_test_loss:
-                print(f"Test loss: {test_loss:.2f}")
+                no_improvement = 0
+                logging.info(f"Test loss: {test_loss:.2f}\n")
 
                 # Show score summary
                 test_preds = (np.array(all_probs) >= 0.5).astype(int)
-                print(classification_report(test_preds, all_labels))
+                logging.info(classification_report(test_preds, all_labels))
 
                 # Save model
-                cur_date_time = str(datetime.datetime.now().replace(microsecond=0)).replace(' ', '_')
-                os.mkdir(f'./nn_ckpt/{cur_date_time}')
-                output_path = os.path.join(f'./nn_ckpt/{cur_date_time}', f'model_epoch_{epoch + 1}.pth')
+                output_path = os.path.join(output_dir, f'model_epoch_{epoch + 1}.pth')
 
                 torch.save(model.state_dict(), output_path)
                 best_test_loss = test_loss
 
             else:
-                print(f"Test loss did not decrease: {test_loss:.2f}")
+                logging.info(f"Test loss did not decrease: {test_loss:.2f}\n")
+                no_improvement += 1
+
+                if no_improvement >= MAX_NO_IMPROVEMENT:
+                    logging.info("Reached maximum number of epochs without validation loss improvement. Exiting early.")
+                    break
