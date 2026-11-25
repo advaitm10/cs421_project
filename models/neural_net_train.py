@@ -74,7 +74,7 @@ class VecDataset(torch.utils.data.Dataset):
         return self.labels.shape[0]
 
 if __name__ == "__main__":
-    handler = DataHandler('../data/eng_train.csv', '../data/eng_test.csv')
+    handler = DataHandler('../data/eng_train.csv', '../data/eng_test.csv', stop_words='english')
 
     train_loader = DataLoader(
         dataset=handler.train_data,

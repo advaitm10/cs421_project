@@ -4,8 +4,8 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import make_pipeline, make_union
 
-train_df = pd.read_csv('data/eng_train.csv')
-test_df = pd.read_csv('data/eng_test.csv')
+train_df = pd.read_csv('../data/eng_train.csv')
+test_df = pd.read_csv('../data/eng_test.csv')
 
 x_train = train_df['text']
 y_train = train_df['polarization']

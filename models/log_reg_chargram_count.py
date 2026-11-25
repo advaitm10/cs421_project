@@ -4,8 +4,8 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.pipeline import make_pipeline, make_union
 
-train_df = pd.read_csv('data/eng_train.csv')
-test_df = pd.read_csv('data/eng_test.csv')
+train_df = pd.read_csv('../data/eng_train.csv')
+test_df = pd.read_csv('../data/eng_test.csv')
 
 x_train = train_df['text']
 y_train = train_df['polarization']
@@ -14,8 +14,8 @@ x_test = test_df['text']
 y_test = test_df['polarization']
 
 char_word = make_union(
-    CountVectorizer(ngram_range=(1, 2)),
-    CountVectorizer(analyzer="char_wb", ngram_range=(2, 5))
+    CountVectorizer(ngram_range=(1, 2), stop_words='english'),
+    CountVectorizer(analyzer="char_wb", ngram_range=(2, 5), stop_words='english')
 )
 
 clf = make_pipeline(

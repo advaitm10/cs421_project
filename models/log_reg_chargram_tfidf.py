@@ -14,8 +14,8 @@ x_test = test_df['text']
 y_test = test_df['polarization']
 
 char_word = make_union(
-    TfidfVectorizer(ngram_range=(1, 2), stop_words='english'),
-    TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5), stop_words='english')
+    TfidfVectorizer(ngram_range=(1, 2)),
+    TfidfVectorizer(analyzer="char_wb", ngram_range=(2, 5))
 )
 
 clf = make_pipeline(
@@ -26,3 +26,12 @@ clf.fit(x_train, y_train)
 
 print(classification_report(y_test, clf.predict(x_test)))
 print(f"Macro Average F1: {f1_score(y_test, clf.predict(x_test), average='macro')}")
+
+# Dump results to pickle
+df = pd.DataFrame({
+    'text': x_test,
+    'true_label': y_test,
+    'pred_label': clf.predict(x_test)
+})
+
+df.to_pickle('best_model_full_results.pkl')

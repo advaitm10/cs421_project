@@ -14,7 +14,7 @@ x_test = test_df['text']
 y_test = test_df['polarization']
 
 clf = make_pipeline(
-    CountVectorizer(stop_words = 'english'),
+    CountVectorizer(stop_words='english'),
     MultinomialNB(alpha = 1.0)
 )
 clf.fit(x_train, y_train)
